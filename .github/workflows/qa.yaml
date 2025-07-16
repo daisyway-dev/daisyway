@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  clippy_check:
+  clippy-check:
     name: Run Clippy
     runs-on: ubuntu-latest
     steps:
@@ -20,8 +20,8 @@ jobs:
         run: cargo clippy --all-targets --all-features
 
   nix-flake-check:
-    name: Run Nix checks on i686-linux
-    needs: clippy_check
+    name: Run Nix checks
+    needs: clippy-check
     runs-on:
       - ubuntu-latest
     steps:
