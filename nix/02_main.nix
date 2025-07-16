@@ -21,6 +21,10 @@ ctx: ctx.scoped rec {
     rustc = packages.daisywayToolchain;
   }) buildRustPackage;
 
+  git = {
+    revision = ctx.flake.self.rev or ctx.flake.self.dirtyRev;
+  };
+
   result.packages = packages // checks;
   result.devShells = devShells;
   result.apps = apps;
@@ -74,6 +78,28 @@ ctx: ctx.scoped rec {
     meta.license = with pkgs.lib.licenses; [ mit asl20 ];
     meta.platforms = pkgs.lib.platforms.all;
   };
+
+  packages.daisyway-tar = (pkgs.runCommand "${toml.package.name}-${toml.package.version}-dev-${git.revision}-${pkgs.system}.tar.zst" { } ''
+    ${pkgs.gnutar}/bin/tar -C ${packages.daisyway} -c ${packages.daisyway}/* | ${pkgs.zstd}/bin/zstd > $out
+  '');
+
+  packages.daisyway-deb = (pkgs.runCommand "${toml.package.name}-${toml.package.version}-dev-${git.revision}-${pkgs.system}.deb" { } ''
+    mkdir -p packageroot/DEBIAN
+
+    cat << EOF > packageroot/DEBIAN/control
+    Package: ${toml.package.name}
+    Version: ${toml.package.version}-dev-${git.revision}
+    Architecture: all
+    Maintainer: Karolin Varner <karo@rosenpass.eu>
+    Depends:
+    Description: ${toml.package.description}
+    EOF
+
+
+    mkdir -p packageroot/usr
+    cp -Ra ${packages.daisyway}/* packageroot/usr
+    ${pkgs.dpkg}/bin/dpkg --build packageroot $out
+  '');
 
   devShells.default = mkShellNoCC {
     packages = []
